@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>GlobalJags</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+    <script src="index.js"></script>
+    <style>
+        #map {
+          height: 80%;
+        }
+        html, body {
+          height: 100%;
+          margin: 0;
+          padding: 0;
+        }
+      </style>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+  </head>
+  
+  <body>
+    <div class="container h-100">
+      <div class="row h-100">
+      <div class="col col-md-4">
+        <div>
+          <img src="./images/globaljags_logo.png" class="img-fluid mx-auto d-block" alt="GlobalJags logo"/>
+        </div>
+        <div id="form">
+          <form method="post" action="upload" enctype="multipart/form-data">
+            <div class="form-group">
+              <label for="file">Select a file to upload</label>
+              <input type="file" class="form-control" name="file" />
+              <small id="fileHelp" class="form-text text-muted">(Use the sample images provided.)</small>
+            </div>
+            <input class="btn btn-primary" type="submit" />
+          </form>
+        </div>
+      </div>
+      <div class="col col-md-8 h-100">
+        <div id="map"></div>
+      </div>f
+    </div>
+    </div>
+    
+    <!--- Add the API key for your Google Map -->
+    <script defer type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDcUbu2A23dgksd_LQxlHU0ky0hxIzqyK4&callback=initMap"></script>
+
+    <!--- Add the JavaScript that connects to Firebase & Firestore -->
+    <script>
+      // Define the initMap function
+      function initMap() {
+        const map = new google.maps.Map(document.getElementById("map"), {
+          center: { lat: 39.7684, lng: -86.1581 },
+          zoom: 10
+        });
+        let previousMarker = null;
+        let previousMarkertwo = null;
+        let startingMarker = true; // Flag to track whether the reset to the starting marker 
+    
+        // Add click event listener to the map
+        map.addListener("click", (event) => {
+          if (startingMarker) {
+            // Move the starting marker (red) to the clicked location
+            if (previousMarker) {
+              previousMarker.setPosition(event.latLng);
+              previousMarker.setMap(map); // Set the marker
+              if (previousMarkertwo) {
+                  previousMarkertwo.setMap(null);
+                  previousMarkertwo = null;
+                }
+            } else {
+              previousMarker = new google.maps.Marker({
+                position: event.latLng,
+                map: map,
+                draggable: false,
+                icon: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png' // Red marker for starting point
+              });
+            }
+          } else {
+            // Move the destination marker (blue) to the clicked location
+            if (previousMarkertwo) {
+              previousMarkertwo.setPosition(event.latLng);
+              previousMarkertwo.setMap(map); // Ensure the marker is visible on the map
+            } else {
+              previousMarkertwo = new google.maps.Marker({
+                position: event.latLng,
+                map: map,
+                draggable: false,
+                icon: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png' // Blue marker for destination point
+              });
+            }
+          }
+    
+          // Toggle the starter Marker
+          startingMarker = !startingMarker;
+    
+          // Send the marker's coordinates 
+          const lat = event.latLng.lat();
+          const lng = event.latLng.lng();
+          fetch('/marker', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ lat, lng })
+          })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+          })
+          .catch(error => {
+            console.error('There was a problem with the fetch operation:', error);
+          });
+        });
+      }
+    </script>
+    
+    <!--- Import Bootstrap JavaScript --->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
+
+  </body>
+</html>
